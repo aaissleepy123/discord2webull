@@ -1,0 +1,10 @@
+discord.py
+undetected-chromedriver
+selenium
+spacy
+nltk
+pyotp
+pytz
+pytesseract
+pillow
+git+https://github.com/tedchou12/webull
