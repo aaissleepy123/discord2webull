@@ -7,4 +7,6 @@ pyotp
 pytz
 pytesseract
 pillow
+transformers
+transformers[torch]
 git+https://github.com/tedchou12/webull
