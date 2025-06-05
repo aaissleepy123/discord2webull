@@ -96,16 +96,16 @@ async def on_ready():
 
 @bot.event
 async def on_message(message: Message):
-    if message.author.bot:
-        return
 
     print(f"[msg] Received: {message.content}")
 
+    # Regular text parsing
     trades = parse_message(message.content)
     print(f"[parse] From text: {trades}")
     for trade in trades:
         await handle_trade(trade)
 
+    # OCR image parsing
     for attachment in message.attachments:
         if attachment.content_type and attachment.content_type.startswith("image"):
             image_bytes = await attachment.read()
@@ -115,6 +115,23 @@ async def on_message(message: Message):
             print(f"[parse] From image: {trades}")
             for trade in trades:
                 await handle_trade(trade)
+
+    # ✅ NEW: Parse embed text
+    for embed in message.embeds:
+        if embed.description:
+            print(f"[embed] Found description: {embed.description}")
+            trades = parse_message(embed.description)
+            print(f"[parse] From embed: {trades}")
+            for trade in trades:
+                await handle_trade(trade)
+
+        if embed.fields:
+            for field in embed.fields:
+                print(f"[embed] Field: {field.name} = {field.value}")
+                trades = parse_message(field.name + "\n" + field.value)
+                print(f"[parse] From embed field: {trades}")
+                for trade in trades:
+                    await handle_trade(trade)
 
 # ========== Helpers ========== #
 def parse_message(text):

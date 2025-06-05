@@ -10,7 +10,7 @@ class LLM:
             "Your task is to analyze the prompt and provide a detailed response."
             "You will be given a prompt that contains information about an options trade, "
             "including the option symbol, strike price, contract type (call or put), expiry date, entry price, and other details."
-            "Your task is to analyze the prompt and turn it into a JSON object that contains the following fields: "
+            "Your task is to analyze the prompt and turn it into a string that contains the following fields: "
             "symbol, contract_type, expiry, price, action, quantity."
         )
     
