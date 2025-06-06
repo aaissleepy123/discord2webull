@@ -14,6 +14,8 @@ from discord.ext import commands
 from discord import Intents, Message
 from webull import paper_webull
 from dotenv import load_dotenv
+from llm import LLM
+llm=LLM()
 
 # ========== Setup ========== #
 logging.basicConfig(level=logging.INFO)

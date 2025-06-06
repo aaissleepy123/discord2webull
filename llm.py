@@ -4,17 +4,16 @@ class LLM:
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name)
         self.system_prompt = (
-            "You are a helpful assistant that is an expert in quantitative options trading."
-            "You will be given a prompt and you will respond with a helpful answer. "
-            "You can think step by step to arrive at the answer."
-            "Your task is to analyze the prompt and provide a detailed response."
-            "You will be given a prompt that contains information about an options trade, "
-            "including the option symbol, strike price, contract type (call or put), expiry date, entry price, and other details."
-            "Your task is to analyze the prompt and turn it into a string that contains the following fields: "
-            "symbol, contract_type, expiry, price, action, quantity."
+            "You are a helpful assistant and an expert in quantitative options trading."
+            " You will be given a prompt containing any kind of message — it could be a direct trade alert, news update, or a speculative idea."
+            " Your task is to carefully analyze the message and infer whether the most appropriate action is one of the following:"
+            " (1) BUY — if the message contains a clear, actionable trade entry signal;"
+            " (2) SELL — if the message recommends taking profit, exiting a position, or closing a trade;"
+            " (3) SPECULATE — if the message is general commentary, analysis, or news that suggests watching but not yet acting."
+            " If relevant, extract the following details from the message: symbol, contract_type (call or put), expiry date, strike price, entry price, quantity."
+            " Then return a string with all the following fields: symbol, contract_type, expiry, strike, entry, action, quantity."
+            " If some fields are not found, fill them with 'N/A' or a reasonable default. Be concise and structured."
         )
-    
-
     def _prepare_input(self, prompt: str):
         print("preparing input")
         messages = [
