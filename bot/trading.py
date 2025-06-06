@@ -46,26 +46,26 @@ def place_option_order(symbol, action, quantity, strike_price, expiry_date, opti
         )
 
 async def handle_trade(bot, trade):
-    key = f\"{trade['symbol']}-{trade['expiry']}-{trade['strike']}-{trade['entry']}"
+    key = f"{trade['symbol']}-{trade['expiry']}-{trade['strike']}-{trade['entry']}"
     if time.time() - recent_trade_times.get(key, 0) < 10:
-        print(\"[skip] Duplicate trade")
+        print("[skip] Duplicate trade")
         return
     recent_trade_times[key] = time.time()
 
     channel = bot.get_channel(BROADCAST_CHANNEL_ID)
     if not channel:
-        print(\"[x] Could not access broadcast channel.")
+        print("[x] Could not access broadcast channel.")
         return
 
     try:
         await send_trade_alert(channel, trade)
-        print(\"[+] Trade alert sent\")
+        print("[+] Trade alert sent")
     except Exception as e:
-        print(f\"[x] Broadcast failed: {e}\")
+        print(f"[x] Broadcast failed: {e}")
         return
 
     if not trade.get('expiry') or not trade.get('strike'):
-        print(\"[~] Incomplete trade — alert sent, skipping order placement\")
+        print("[~] Incomplete trade — alert sent, skipping order placement")
         return
 
     try:
@@ -79,6 +79,6 @@ async def handle_trade(bot, trade):
             option_type=trade.get('contract_type', 'C'),
             limit_price=trade['entry']
         )
-        print(\"[+] Order placed\")
+        print("[+] Order placed")
     except Exception as e:
-        print(f\"[x] Order failed: {e}\")
+        print(f"[x] Order failed: {e}")
