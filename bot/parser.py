@@ -1,33 +1,37 @@
 from datetime import datetime
-from llm import LLM
+from llmopenai import LLM
+import json
 
 llm = LLM()
 
 def parse_message(text):
     try:
         response = llm.prompt(text)
-        trade = {}
-        for line in response.splitlines():
-            if ":" in line:
-                key, val = line.split(":", 1)
-                key, val = key.strip().lower(), val.strip()
-                if key in ["strike", "price", "entry"]:
-                    trade["entry"] = float(val)
-                elif key == "quantity":
-                    trade["quantity"] = int(val)
-                elif key == "symbol":
-                    trade["symbol"] = val.upper()
-                elif key == "expiry":
-                    trade["expiry"] = val
-                elif key == "contract_type":
-                    trade["contract_type"] = val.upper()
-                elif key == "action":
-                    trade["action"] = val.upper()
-        trade.setdefault("quantity", 1)
-        trade.setdefault("action", "BUY")
+
+        # Parse JSON string from LLM into dict
+        trade = json.loads(response)
+
+        # Sanity check for required fields
+        required = ["symbol", "contract_type", "expiry", "strike", "action", "quantity"]
+        if not all(field in trade for field in required):
+            print(f"[!] Missing fields in trade: {trade}")
+            return []
+
+        # Normalize field types and values
+        trade["symbol"] = trade["symbol"].upper()
+        trade["contract_type"] = trade["contract_type"].upper()[0]  # 'C' or 'P'
+        trade["expiry"] = str(trade["expiry"])
+        trade["strike"] = float(trade["strike"])
+        trade["entry"] = float(trade["entry"])
+        trade["quantity"] = int(trade["quantity"])
+        trade["action"] = trade["action"].upper()
+
+        # Add timestamp and source
         trade["timestamp"] = datetime.utcnow().isoformat()
         trade["source"] = text
-        return [trade] if "symbol" in trade and "entry" in trade else []
+
+        return [trade]
+
     except Exception as e:
         print(f"[x] LLM parsing error: {e}")
         return []

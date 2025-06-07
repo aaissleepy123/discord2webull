@@ -6,9 +6,10 @@ from discord.ext import commands
 from discord import Intents, Message
 
 from dotenv import load_dotenv
-from .ocr import ocr_from_screenshot
-from .parser import parse_message
-from .trading import handle_trade
+from bot.ocr import ocr_from_screenshot
+from bot.parser import parse_message
+from bot.trading import handle_trade,MarketOrderExecutor
+
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -29,23 +30,26 @@ async def on_ready():
     if ch:
         await ch.send("✅ Bot is online and ready to broadcast!")
 
+
 @bot.event
-async def on_message(message: Message):
-    print(f"[msg] Received: {message.content}")
+async def on_message(message):
+    trades = parse_message(message.content)
+    executor = MarketOrderExecutor(trades)  # Pass the bot reference
 
-    for content in [message.content] + [e.description for e in message.embeds if e.description] + \
-                   [f"{f.name}\n{f.value}" for e in message.embeds for f in e.fields]:
-        trades = parse_message(content)
-        for trade in trades:
-            await handle_trade(bot, trade)
+    for trade in trades:
+        try:
+            await executor.execute_from_parser(trade)
+        except Exception as e:
+            print(f"Trade failed: {e}")
 
+    # Process attachments (screenshots) if needed
     for attachment in message.attachments:
-        if attachment.content_type and attachment.content_type.startswith("image"):
-            image_bytes = await attachment.read()
-            ocr_text = ocr_from_screenshot(image_bytes)
-            trades = parse_message(ocr_text)
+        if attachment.content_type.startswith('image'):
+            text = ocr_from_screenshot(await attachment.read())
+            trades = parse_message(text)
             for trade in trades:
-                await handle_trade(bot, trade)
+                await executor.execute_from_parser(trade)
 
 def start_bot():
     bot.run(DISCORD_TOKEN)
+
