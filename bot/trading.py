@@ -1,69 +1,70 @@
-from ib_insync import IB, Option, MarketOrder
+import os
+import logging
+from ib_insync import IB, Option, MarketOrder, LimitOrder, util
+from dotenv import load_dotenv
+from concurrent.futures import ThreadPoolExecutor
 
+# Setup
+load_dotenv()
+util.patchAsyncio()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('ibkr')
 
-class MarketOrderExecutor:
-    def __init__(self, trades=None):  # Make trades optional
-        self.ib = IB()
-        self.trades = trades
+# IBKR connection info
+HOST = os.getenv("HOSTID", "127.0.0.1")
+PORT = int(os.getenv("ENVIRONMENT", 4002))
+CLIENT_ID = int(os.getenv("CLIENTID", 1))
 
-    def connect(self):
-        """Connect to TWS/Gateway"""
-        if not self.ib.isConnected():
-            self.ib.connect('127.0.0.1', 7497, clientId=1)
-            print("Connected to IBKR")
+# IBKR setup
+ib = IB()
+executor = ThreadPoolExecutor(max_workers=1)
 
-    def execute_from_parser(self, parsed_trade):
-        """
-        Execute market order using output from parse_message()
+def connect_ib():
+    if not ib.isConnected():
+        ib.connect(HOST, PORT, clientId=CLIENT_ID)
+        logger.info("✅ Connected to IBKR")
 
-        Args:
-            parsed_trade: Dict with keys:
-                symbol (str)
-                contract_type (str 'C'/'P')
-                expiry (str 'YYYYMMDD')
-                strike (float)
-                action (str 'BUY'/'SELL')
-                quantity (int)
-        """
-        self.connect()
+def resolve_contract(symbol, expiry, strike, right):
+    contract = Option(symbol, expiry, strike, right, exchange="SMART", currency="USD")
+    ib.qualifyContracts(contract)
+    if not contract.conId:
+        raise ValueError("Contract qualification failed")
+    return contract
 
-        contract = Option(
-            symbol=parsed_trade['symbol'],
-            lastTradeDateOrContractMonth=parsed_trade['expiry'],
-            strike=parsed_trade['strike'],
-            right=parsed_trade['contract_type'],
-            exchange='SMART'
+def place_order(contract, action, quantity, order_type="MKT", limit_price=None):
+    if order_type == "MKT":
+        order = MarketOrder(action, quantity)
+    elif order_type == "LMT" and limit_price:
+        order = LimitOrder(action, quantity, limit_price)
+    else:
+        raise ValueError("Invalid order type")
+    order.outsideRth = True
+    order.account = ib.managedAccounts()[0]
+    trade = ib.placeOrder(contract, order)
+    logger.info(f"✅ Order submitted: {action} {quantity} {contract.symbol}")
+    return trade
+
+def handle_trade(trade_data):
+    try:
+        connect_ib()
+        contract = resolve_contract(
+            trade_data['symbol'],
+            trade_data['expiry'],
+            trade_data['strike'],
+            trade_data['contract_type']
         )
-
-        self.ib.qualifyContracts(contract)
-
-        order = MarketOrder(
-            action=parsed_trade['action'],
-            totalQuantity=parsed_trade['quantity']
-        )
-
-        trade = self.ib.placeOrder(contract, order)
-
-        print(
-            f"Executed: {parsed_trade['action']} {parsed_trade['quantity']} "
-            f"{parsed_trade['symbol']} {parsed_trade['strike']}"
-            f"{parsed_trade['contract_type']}\n"
-            f"Source: {parsed_trade.get('source_text', 'N/A')}"
+        trade = place_order(
+            contract,
+            trade_data['action'],
+            trade_data['quantity'],
+            trade_data.get('order_type', 'MKT'),
+            trade_data.get('limit_price')
         )
         return trade
+    except Exception as e:
+        logger.error(f"Trade failed: {e}")
+        return None
 
-    def disconnect(self):
-        """Close connection"""
-        if self.ib.isConnected():
-            self.ib.disconnect()
-            print("Disconnected from IBKR")
-
-
-def handle_trade(trade):
-    """Function expected by core.py"""
-    executor = MarketOrderExecutor()  # Don't pass trades here unless needed
-    try:
-        executor.connect()
-        executor.execute_from_parser(trade)  # Note: changed from execute_trade to execute_from_parser
-    finally:
-        executor.disconnect()
+def submit_trade(trade_data):
+    future = executor.submit(handle_trade, trade_data)
+    return future

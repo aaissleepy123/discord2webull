@@ -9,7 +9,9 @@ def parse_message(text):
         response = llm.prompt(text)
 
         # Parse JSON string from LLM into dict
-        trade = json.loads(response)
+        trade = dict(
+            tuple(field.strip().split(":", 1)) for field in response.split(", ") if ":" in field
+        )
 
         # Sanity check for required fields
         required = ["symbol", "contract_type", "expiry", "strike", "action", "quantity"]
@@ -22,7 +24,6 @@ def parse_message(text):
         trade["contract_type"] = trade["contract_type"].upper()[0]  # 'C' or 'P'
         trade["expiry"] = str(trade["expiry"])
         trade["strike"] = float(trade["strike"])
-        trade["entry"] = float(trade["entry"])
         trade["quantity"] = int(trade["quantity"])
         trade["action"] = trade["action"].upper()
 

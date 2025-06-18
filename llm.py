@@ -25,7 +25,7 @@ class LLM:
             " (3) SPECULATE — if the message is saying im looking at, general commentary, analysis, or news that suggests watching but not yet acting."
             " The action can only be one of BUY, SELL, and SPECULATE. Things like taking profit and trimming mean SELL, grabbing means buying."
             " you can only return SELL if your current holding of this quantity is strictly larger than 0."
-            " If relevant, extract the following details from the message: symbol, contract_type (call or put), expiry date (e.g. 6/06), strike price (an integer), entry price, quantity."
+            " If relevant, extract the following details from the message: symbol, contract_type (call or put), expiry date (e.g. 6/06), strike price (an integer), quantity."
             " Quantity for BUY is always two unless specified. Quantity for SELL is always one."
             " the expiry should be in the format YYYYMMDD. YYYY is always 2025 unless specified."
             " Then return ONLY a JSON with all the following fields: symbol:..., contract_type:..., expiry:..., strike:..., action:..., quantity:... "
@@ -58,7 +58,6 @@ class LLM:
                     "contract_type": trade_data["contract_type"],
                     "expiry": trade_data["expiry"],
                     "strike": trade_data["strike"],
-                    "entry": trade_data["entry"],
                     "quantity": trade_data.get("quantity", 2)  # Default 2 for BUY
                 }
 
