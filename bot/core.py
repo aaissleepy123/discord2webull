@@ -13,6 +13,7 @@ from bot.parser import parse_message
 from bot.trading import submit_trade, handle_trade
 from clearpositions import clearpositions
 from checkpnl import check_pnl
+from checkpos import check_positions
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -92,6 +93,8 @@ async def on_message(message: Message):
             await message.channel.send(clearpositions())
         if output=="pnl":
             await message.channel.send(check_pnl())
+        if output=="check":
+            await message.channel.send(check_positions())
         if "vc trade" in output:
             return
 

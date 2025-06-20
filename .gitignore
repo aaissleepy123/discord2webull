@@ -1,2 +1,4 @@
 .env
 core.py
+__pycache__/
+*.pyc

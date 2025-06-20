@@ -2,7 +2,7 @@ from ib_insync import IB
 
 def check_pnl():
     ib = IB()
-    ib.connect('127.0.0.1', 4002, clientId=2)
+    ib.connect('127.0.0.1', 4002, clientId=5)
 
     summary = ib.accountSummary()
 
