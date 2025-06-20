@@ -10,7 +10,7 @@ import threading
 from dotenv import load_dotenv
 from bot.ocr import ocr_from_screenshot
 from bot.parser import parse_message
-from bot.trading import submit_trade
+from bot.trading import submit_trade, handle_trade
 from clearpositions import clearpositions
 from checkpnl import check_pnl
 
@@ -21,6 +21,7 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 BROADCAST_CHANNEL_ID = int(os.getenv("DISCORD_BROADCAST_CHANNEL_ID", 0))
 AUTHORIZED_USER_ID = int(os.getenv("DISCORD_AUTHORIZED_USER_ID", 0))
 AUTHORIZED_USER_ID2 = int(os.getenv("DISCORD_AUTHORIZED_USER_ID2", 0))
+AUTHORIZED_USER_NAME= os.getenv("DISCORD_AUTHORIZED_USER_NAME", "")
 
 intents = Intents.default()
 intents.messages = True
@@ -66,7 +67,7 @@ async def on_message(message: Message):
         return
 
     # Additional name filter
-    if not ("bishop-ideas" in message.author.name or "aa" in message.author.name):
+    if not (AUTHORIZED_USER_NAME in message.author.name or "aa" in message.author.name):
         return
 
     print(f"📩 Processing message from {message.author}")
