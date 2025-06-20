@@ -65,6 +65,25 @@ def handle_trade(trade_data):
         logger.error(f"Trade failed: {e}")
         return None
 
+def fetch_ibkr_positions_string(ib):
+    positions = ib.positions()
+    summaries = []
+
+    for pos in positions:
+        contract = pos.contract
+        if hasattr(contract, 'symbol') and hasattr(contract, 'right') and hasattr(contract, 'lastTradeDateOrContractMonth'):
+            if pos.position != 0:
+                summaries.append(
+                    f"{'LONG' if pos.position > 0 else 'SHORT'} {abs(pos.position)} "
+                    f"{contract.symbol} {contract.right} {contract.strike} {contract.lastTradeDateOrContractMonth}"
+                )
+
+    if summaries:
+        return " | ".join(summaries)
+    else:
+        return "No open positions"
+
+
 def submit_trade(trade_data):
     future = executor.submit(handle_trade, trade_data)
     return future

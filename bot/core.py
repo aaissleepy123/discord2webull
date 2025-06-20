@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 from bot.ocr import ocr_from_screenshot
 from bot.parser import parse_message
 from bot.trading import submit_trade
+from clearpositions import clearpositions
+from checkpnl import check_pnl
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -85,11 +87,17 @@ async def on_message(message: Message):
         output = " ".join(output_parts).strip()
 
     if output:
+        if output=="clear pos":
+            await message.channel.send(clearpositions())
+        if output=="pnl":
+            await message.channel.send(check_pnl())
+        if "vc trade" in output:
+            return
+
         trades = parse_message(output)
         if trades:
             for trade in trades:
                 future = submit_trade(trade)  # Returns future for tracking
-
                 # Optional: Check status after delay
                 if future:
                     await asyncio.sleep(5)

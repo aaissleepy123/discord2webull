@@ -10,29 +10,39 @@ def parse_message(text):
 
         # Parse JSON string from LLM into dict
         trade = dict(
-            tuple(field.strip().split(":", 1)) for field in response.split(", ") if ":" in field
+            (k.strip(), v.strip()) for k, v in
+            (field.split(":", 1) for field in response.split(", ") if ":" in field)
         )
 
-        # Sanity check for required fields
+        # Required fields
         required = ["symbol", "contract_type", "expiry", "strike", "action", "quantity"]
         if not all(field in trade for field in required):
             print(f"[!] Missing fields in trade: {trade}")
             return []
 
-        # Normalize field types and values
-        trade["symbol"] = trade["symbol"].upper()
-        trade["contract_type"] = trade["contract_type"].upper()[0]  # 'C' or 'P'
-        trade["expiry"] = str(trade["expiry"])
-        trade["strike"] = float(trade["strike"])
-        trade["quantity"] = int(trade["quantity"])
-        trade["action"] = trade["action"].upper()
+        # Normalize with stripping
+        trade["symbol"] = trade["symbol"].strip().upper()
+        trade["contract_type"] = trade["contract_type"].strip().upper()[0]  # safer: could add check
+        trade["expiry"] = trade["expiry"].strip()
+        trade["strike"] = float(trade["strike"].strip())
+        trade["quantity"] = int(trade["quantity"].strip())
+        trade["action"] = trade["action"].strip().upper()
 
-        # Add timestamp and source
+        # Validate contract_type
+        if trade["contract_type"] not in {"C", "P"}:
+            print(f"[!] Invalid contract_type: {trade['contract_type']}")
+            return []
+
+        # Validate expiry (simple YYYYMMDD check)
+        if not (trade["expiry"].isdigit() and len(trade["expiry"]) == 8):
+            print(f"[!] Invalid expiry: {trade['expiry']}")
+            return []
+
+        # Add timestamp + source
         trade["timestamp"] = datetime.utcnow().isoformat()
         trade["source"] = text
 
         return [trade]
-
     except Exception as e:
         print(f"[x] LLM parsing error: {e}")
         return []
