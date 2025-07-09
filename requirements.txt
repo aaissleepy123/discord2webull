@@ -9,5 +9,6 @@ pytesseract
 pillow
 transformers
 python-dotenv
-transformers[torch]
-git+https://github.com/tedchou12/webull
+ib_insync
+openai
+httpx

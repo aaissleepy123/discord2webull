@@ -1,23 +1,14 @@
 from ib_insync import IB, MarketOrder
 
-
 def clearpositions():
     ib = IB()
-    ib.connect('127.0.0.1', 4002, clientId=3)
+    ib.connect('127.0.0.1', 4001, clientId=3)
 
     positions = ib.positions()
-    print(positions)
+    total_pnl = 0.0
 
-    # Print account summary
-    summary = ib.accountSummary()
-    for s in summary:
-        print(f"{s.tag}: {s.value}")
-
-    # Go through positions and close them
     for pos in positions:
         contract = pos.contract
-
-        # Get full contract details
         details = ib.reqContractDetails(contract)
         if not details:
             print(f"⚠ Could not resolve contract details for {contract.localSymbol}")
@@ -25,26 +16,28 @@ def clearpositions():
 
         full_contract = details[0].contract
         position_size = pos.position
+        avg_cost = pos.avgCost
+        multiplier = float(full_contract.multiplier or 1)
 
         if position_size != 0:
             action = 'SELL' if position_size > 0 else 'BUY'
             quantity = abs(position_size)
 
-            print(f"Submitting {action} {quantity} {full_contract.localSymbol}")
             order = MarketOrder(action, quantity)
-            order.outsideRth = True  # optional if you want to allow trading outside regular hours
+            order.outsideRth = True
             trade = ib.placeOrder(full_contract, order)
 
-            # Wait until filled or cancelled
             while trade.orderStatus.status not in ('Filled', 'Cancelled'):
                 ib.waitOnUpdate(timeout=1)
 
-            print(f"✅ Order status: {trade.orderStatus.status}")
+            if trade.orderStatus.status == 'Filled':
+                fill_price = trade.orderStatus.avgFillPrice
+                if position_size > 0:
+                    pnl = (fill_price - avg_cost) * position_size * multiplier
+                else:
+                    pnl = (avg_cost - fill_price) * abs(position_size) * multiplier
+                total_pnl += pnl
+                print(f"✅ Closed {quantity} {full_contract.localSymbol} at {fill_price}, PnL: {pnl:.2f}")
 
-    # Final PnL summary
-    portfolio = ib.portfolio()
-    total_realized = sum(p.realizedPNL for p in portfolio)
-    total_unrealized = sum(p.unrealizedPNL for p in portfolio)
     ib.disconnect()
-    return f"🔥 Today's Realized PnL: {total_realized}", f"📊 Current Unrealized PnL: {total_unrealized}"
-
+    return f"🔥SLAYYYY QUEEN!! You cleared positions PnL: {total_pnl:.2f} USD"

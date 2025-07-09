@@ -37,6 +37,11 @@ def parse_message(text):
         if not (trade["expiry"].isdigit() and len(trade["expiry"]) == 8):
             print(f"[!] Invalid expiry: {trade['expiry']}")
             return []
+        expiry_date = trade["expiry"]
+        if expiry_date.startswith("2024"):
+            # Replace 2024 with 2025 while keeping month/day the same
+            corrected_expiry = "2025" + expiry_date[4:]
+            trade["expiry"] = corrected_expiry
 
         # Add timestamp + source
         trade["timestamp"] = datetime.utcnow().isoformat()
