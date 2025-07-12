@@ -191,6 +191,9 @@ async def monitor_positions():
             positions_str = await asyncio.get_running_loop().run_in_executor(None, check_positions)
 
             if "No open positions" in positions_str:
+                channel = bot.get_channel(BROADCAST_CHANNEL_ID)
+                if channel:
+                    await channel.send("noooooo positions")
                 await asyncio.sleep(300)
                 continue
 
@@ -239,6 +242,10 @@ async def monitor_positions():
                 if channel:
                     for msg in messages:
                         await channel.send(msg)
+            else:
+                channel = bot.get_channel(BROADCAST_CHANNEL_ID)
+                if channel:
+                    await channel.send("nah ur fine")
 
         except Exception as e:
             print(f"⚠️ Monitoring error: {e}")

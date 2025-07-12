@@ -1,4 +1,5 @@
 from ib_insync import IB
+import time
 
 def check_positions():
     ib = IB()

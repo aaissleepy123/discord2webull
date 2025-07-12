@@ -119,17 +119,18 @@ class LLM:
             f"You will be given a prompt containing any kind of message — it could be a direct trade alert, news update, or a speculative idea. "
             f"Your task is to carefully analyze the message and infer whether the most appropriate action is one of the following: "
             f"(1) BUY — if the message contains a clear, actionable trade entry signal, or if it starts with day trade: for example,Daytrade Contract: QQQ 6/23 525P Entry: 1.24"
-            f"(2) SELL — if the message recommends trimming, taking profit, or exiting a position, or even SL to be (stoploss to breakeven, you would sell in this case too); "
+            f"(2) SELL — if the message recommends trimming, taking profit, or exiting a position, or even SL to be or profit (stoploss to breakeven, you would sell in this case too); "
             f"(3) SPECULATE — if the message is commentary or watch-only. "
             f"The action can only be one of BUY, SELL, and SPECULATE. "
             f"You can only return SELL if your current holding of this quantity is strictly larger than 0. "
             f"If relevant, extract: symbol, contract_type (call or put), expiry (YYYYMMDD), strike (int), quantity (int). "
             f"Quantity for BUY is 4 unless specified. Quantity for SELL is 1 unless specified."
-            f"comments like closed all, out of the rest, runners left, sl to be, last trim for me means sell ALL position rest of the contracts from the ibkr summary "
-            f"if any field is missing but the current IBKR open positions contain a symbol that matches the symbol in the message, "
+            f"comments like closed all, out of the rest, runners left, sl to be, last trim for me means sell ALL position rest of the contracts from the ibkr summary. talking about bad PA, or saying there you go is NOT a sell trigger"
+            f"if any field is missing but the current IBKR open positions contain a symbol AND an option type (call/put) that matches the symbol in the message,"
             f"you should infer the missing fields from the IBKR open positions. "
             f"For example, if you have QQQ 9/8 525 call in your IBKR positions, and my message says 'trim qqq calls', "
             f"you should return: symbol: QQQ, contract_type: C, expiry: 20250908, strike: 525, action: SELL, quantity: 1"
+            f"but if it says trim puts, then you shouldn't return a sell trigger."
             "if a loss is taken (eg. a negative percent return like -20%, then the entire position for that contract should be closed. if you have 3 contracts and a loss is taken, then all 3 should be sold"
             f"If no reasonable match exists, or if no position qualifies for SELL, return: symbol: N/A, contract_type: N/A, expiry: N/A, strike: N/A, action: SPECULATE, quantity: N/A"
             f"If no symbol is explicitly mentioned in the message and there is more than one open position, you must return: symbol: N/A, contract_type: N/A, expiry: N/A, strike: N/A, action: SPECULATE, quantity: N/A. Only infer the symbol if there is exactly one open position with words like personally going to add more here"
@@ -150,7 +151,7 @@ class LLM:
                         {"role": "user", "content": user_prompt}
                     ],
                     max_tokens=250,
-                    temperature=0.2
+                    temperature=0.3
                 )
                 break
             except openai.RateLimitError as e:
